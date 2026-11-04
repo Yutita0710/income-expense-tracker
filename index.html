@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกรายรับ-รายจ่ายประจำวัน (Daily Expense Tracker)</title>
+    <!-- Google Fonts: Prompt & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Flatpickr (Date Picker) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                    <h1>สมุดบันทึกรายรับ-รายจ่าย</h1>
+                    <p class="subtitle">จัดการการเงินส่วนบุคคลอย่างง่ายและมีประสิทธิภาพ</p>
+                </div>
+            </div>
+            <div class="date-badge">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span id="currentDate">วันที่ปัจจุบัน</span>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs (เลือกหน้า) -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="home">
+                <i class="fa-solid fa-house"></i> หน้าแรก (ภาพรวมและรายการ)
+            </button>
+            <button class="nav-tab" data-tab="analytics">
+                <i class="fa-solid fa-chart-pie"></i> สถิติและรายงาน
+            </button>
+            <button class="nav-tab" data-tab="budget">
+                <i class="fa-solid fa-bullseye"></i> งบประมาณและเป้าหมาย
+            </button>
+        </nav>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: หน้าแรก (ภาพรวมและบันทึกรายการ) -->
+        <!-- ========================================== -->
+        <div id="tab-home" class="tab-pane active">
+            <!-- Summary Dashboard (การ์ดสรุปยอดเงิน) -->
+            <section class="summary-grid">
+                <div class="summary-card balance-card">
+                    <div class="card-info">
+                        <span class="card-label">ยอดเงินคงเหลือสุทธิ</span>
+                        <h2 class="card-value" id="netBalance">฿0.00</h2>
+                    </div>
+                    <div class="card-icon balance-icon">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                </div>
+
+                <div class="summary-card income-card">
+                    <div class="card-info">
+                        <span class="card-label">รายรับทั้งหมด</span>
+                        <h2 class="card-value income-text" id="totalIncome">+฿0.00</h2>
+                    </div>
+                    <div class="card-icon income-icon">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
+                </div>
+
+                <div class="summary-card expense-card">
+                    <div class="card-info">
+                        <span class="card-label">รายจ่ายทั้งหมด</span>
+                        <h2 class="card-value expense-text" id="totalExpense">-฿0.00</h2>
+                    </div>
+                    <div class="card-icon expense-icon">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Content Area: Form & History List -->
+            <main class="main-layout">
+                <!-- Left Side: Transaction Form -->
+                <section class="card form-section">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-circle-plus"></i> บันทึกรายการใหม่</h2>
+                    </div>
+
+                    <form id="transactionForm">
+                        <!-- เลือกประเภท: รายรับ หรือ รายจ่าย -->
+                        <div class="type-selector">
+                            <label class="radio-label">
+                                <input type="radio" name="type" value="income" id="typeIncome">
+                                <span class="radio-custom income-btn">
+                                    <i class="fa-solid fa-arrow-up"></i> รายรับ (+)
+                                </span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="type" value="expense" id="typeExpense" checked>
+                                <span class="radio-custom expense-btn">
+                                    <i class="fa-solid fa-arrow-down"></i> รายจ่าย (-)
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- ชื่อรายการ -->
+                        <div class="form-group">
+                            <label for="title">ชื่อรายการ <span class="required">*</span></label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-tag"></i>
+                                <input type="text" id="title" placeholder="เช่น ค่าอาหารกลางวัน, เงินเดือน" required>
+                            </div>
+                        </div>
+
+                        <!-- หมวดหมู่ -->
+                        <div class="form-group">
+                            <label for="category">หมวดหมู่ <span class="required">*</span></label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-folder-open"></i>
+                                <select id="category" required>
+                                    <!-- หมวดหมู่จะเปลี่ยนไปตามประเภทที่เลือกด้วย JavaScript -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- จำนวนเงิน -->
+                        <div class="form-group">
+                            <label for="amount">จำนวนเงิน (บาท) <span class="required">*</span></label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-baht-sign"></i>
+                                <input type="number" id="amount" placeholder="0.00" min="0.00" required>
+                            </div>
+                        </div>
+
+                        <!-- วันที่บันทึก -->
+                        <div class="form-group">
+                            <label for="date">วันที่ <span class="required">*</span></label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-calendar"></i>
+                                <input type="text" id="date" value="2026-11-01" placeholder="วว/ดด/ปปปป" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="submit-btn" id="submitBtn">
+                            <i class="fa-solid fa-save"></i> บันทึกรายการ
+                        </button>
+                    </form>
+                </section>
+
+                <!-- Right Side: Transaction History -->
+                <section class="card history-section">
+                    <div class="section-header history-header">
+                        <h2>
+                            <i class="fa-solid fa-clock-rotate-left"></i> ประวัติรายการ
+                            <span class="count-badge" id="txCountBadge">0 รายการ</span>
+                        </h2>
+                        <div class="history-actions">
+                            <select id="sortSelect" class="sort-select" title="เรียงลำดับรายการ">
+                                <option value="date-desc">ล่าสุด ➔ เก่าสุด</option>
+                                <option value="date-asc">เก่าสุด ➔ ล่าสุด</option>
+                                <option value="amount-desc">ยอดเงินมาก ➔ น้อย</option>
+                                <option value="amount-asc">ยอดเงินน้อย ➔ มาก</option>
+                            </select>
+                            <button id="clearAllBtn" class="clear-btn" title="ล้างข้อมูลทั้งหมด">
+                                <i class="fa-solid fa-trash-can"></i> ล้างทั้งหมด
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Buttons -->
+                    <div class="filter-bar">
+                        <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
+                        <button class="filter-btn" data-filter="income">เฉพาะรายรับ</button>
+                        <button class="filter-btn" data-filter="expense">เฉพาะรายจ่าย</button>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="searchInput" placeholder="ค้นหาชื่อรายการหรือหมวดหมู่...">
+                    </div>
+
+                    <!-- Transaction List -->
+                    <div class="transaction-list-container">
+                        <ul id="transactionList" class="transaction-list">
+                            <!-- รายการจะถูก render ขึ้นมาด้วย JavaScript -->
+                        </ul>
+                        <div id="emptyState" class="empty-state">
+                            <i class="fa-solid fa-receipt"></i>
+                            <p>ยังไม่มีรายการบันทึก</p>
+                            <span>เริ่มต้นเพิ่มรายการรายรับหรือรายจ่ายได้ที่แบบฟอร์มด้านซ้าย</span>
+                        </div>
+                    </div>
+
+                    <!-- Pagination Bar (แสดงเมื่อมีข้อมูลหลายรายการ) -->
+                    <div id="paginationBar" class="pagination-bar" style="display: none;">
+                        <span id="pageInfoText" class="page-info">แสดง 1-5 จาก 5 รายการ</span>
+                        <div class="pagination-controls">
+                            <button id="prevPageBtn" class="page-btn" title="หน้าก่อนหน้า">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <div id="pageNumbers" class="page-numbers">
+                                <!-- ปุ่มเลขหน้าจะถูก render ด้วย JavaScript -->
+                            </div>
+                            <button id="nextPageBtn" class="page-btn" title="หน้าถัดไป">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: สถิติและรายงาน (Analytics & Reports) -->
+        <!-- ========================================== -->
+        <div id="tab-analytics" class="tab-pane">
+            <!-- Insights Highlights -->
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-icon"><i class="fa-solid fa-piggy-bank"></i></div>
+                    <div class="insight-info">
+                        <span class="insight-label">อัตราการออมเงิน (Savings Rate)</span>
+                        <h3 id="savingsRate">0%</h3>
+                        <p id="savingsRateDesc">สัดส่วนเงินคงเหลือเทียบกับรายรับทั้งหมด</p>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-icon"><i class="fa-solid fa-fire"></i></div>
+                    <div class="insight-info">
+                        <span class="insight-label">หมวดหมู่ใช้จ่ายสูงสุด</span>
+                        <h3 id="topCategory">-</h3>
+                        <p id="topCategoryAmount">฿0.00</p>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-icon"><i class="fa-solid fa-calculator"></i></div>
+                    <div class="insight-info">
+                        <span class="insight-label">ค่าใช้จ่ายเฉลี่ยต่อรายการ</span>
+                        <h3 id="avgExpense">฿0.00</h3>
+                        <p id="expenseCount">0 รายการรายจ่าย</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="card chart-card">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-chart-pie"></i> สัดส่วนรายจ่ายตามหมวดหมู่</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="section-header">
+                        <h2><i class="fa-solid fa-chart-column"></i> เปรียบเทียบรายรับและรายจ่าย</h2>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: งบประมาณและเป้าหมาย (Budget & Goals) -->
+        <!-- ========================================== -->
+        <div id="tab-budget" class="tab-pane">
+            <!-- Monthly Budget Section -->
+            <section class="card budget-card">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-gauge-high"></i> งบประมาณรายจ่ายประจำเดือน</h2>
+                    <button id="setBudgetBtn" class="clear-btn">
+                        <i class="fa-solid fa-pen-to-square"></i> ตั้งค่างบประมาณ
+                    </button>
+                </div>
+                <div class="budget-overview">
+                    <div class="budget-stat">
+                        <span class="stat-label">งบประมาณที่ตั้งไว้</span>
+                        <h3 id="budgetLimitText">฿15,000.00</h3>
+                    </div>
+                    <div class="budget-stat">
+                        <span class="stat-label">ใช้จ่ายไปแล้ว</span>
+                        <h3 id="budgetSpentText" class="expense-text">฿0.00</h3>
+                    </div>
+                    <div class="budget-stat">
+                        <span class="stat-label">งบที่เหลือใช้ได้</span>
+                        <h3 id="budgetRemainingText" class="income-text">฿15,000.00</h3>
+                    </div>
+                </div>
+                <div class="budget-progress-container">
+                    <div class="budget-progress-bar">
+                        <div id="budgetProgressFill" class="budget-progress-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="budget-progress-meta">
+                        <span id="budgetPercentText">ใช้ไปแล้ว 0%</span>
+                        <span id="budgetStatusBadge" class="status-badge safe">ปลอดภัย</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Savings Goals Section -->
+            <section class="card goals-card">
+                <div class="section-header">
+                    <h2><i class="fa-solid fa-trophy"></i> กระปุกเป้าหมายการออมเงิน</h2>
+                    <button id="openGoalModalBtn" class="submit-btn mini-btn">
+                        <i class="fa-solid fa-plus"></i> เพิ่มเป้าหมายใหม่
+                    </button>
+                </div>
+
+                <!-- Goals Grid -->
+                <div id="goalsGrid" class="goals-grid">
+                    <!-- จะถูก render ขึ้นมาด้วย JavaScript -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Goal Modal (เพิ่มเป้าหมาย) -->
+        <div id="goalModal" class="modal-overlay" style="display: none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-bullseye"></i> เพิ่มเป้าหมายการออมเงิน</h3>
+                    <button id="closeGoalModal" class="modal-close">&times;</button>
+                </div>
+                <form id="goalForm">
+                    <div class="form-group">
+                        <label for="goalName">ชื่อเป้าหมาย <span class="required">*</span></label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-tag"></i>
+                            <input type="text" id="goalName" placeholder="เช่น เงินสำรองฉุกเฉิน, ซื้อโน้ตบุ๊กใหม่"
+                                required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="goalTarget">จำนวนเงินเป้าหมาย (บาท) <span class="required">*</span></label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-baht-sign"></i>
+                            <input type="number" id="goalTarget" placeholder="0.00" min="1" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="goalCurrent">เงินที่เก็บได้แล้วเริ่มต้น (บาท)</label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-piggy-bank"></i>
+                            <input type="number" id="goalCurrent" placeholder="0.00" min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <i class="fa-solid fa-save"></i> บันทึกเป้าหมาย
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Deposit Modal (หยอดกระปุก/เพิ่มเงินออม) -->
+        <div id="depositModal" class="modal-overlay" style="display: none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3><i class="fa-solid fa-coins"></i> หยอดกระปุกเงินออม</h3>
+                    <button id="closeDepositModal" class="modal-close">&times;</button>
+                </div>
+                <form id="depositForm">
+                    <input type="hidden" id="depositGoalId">
+                    <p id="depositGoalTitle" style="font-weight: 500; margin-bottom: 12px; color: var(--text-primary);">
+                    </p>
+                    <div class="form-group">
+                        <label for="depositAmount">จำนวนเงินที่ต้องการออมเพิ่ม (บาท) <span
+                                class="required">*</span></label>
+                        <div class="input-with-icon">
+                            <i class="fa-solid fa-baht-sign"></i>
+                            <input type="number" id="depositAmount" placeholder="0.00" min="1" step="0.01" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <i class="fa-solid fa-plus-circle"></i> ยืนยันการออมเงิน
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>โปรเจกต์ส่งการประเมินวิชา Introduction to JavaScript | พัฒนาด้วย HTML, CSS และ JavaScript</p>
+        </footer>
+    </div>
+
+    <!-- Flatpickr JS & Thai Locale -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+    <!-- JavaScript File -->
+    <script src="app.js"></script>
+</body>
+
+</html>
